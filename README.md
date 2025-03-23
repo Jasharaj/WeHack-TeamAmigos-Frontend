@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CasePilot - Modern Legal Tech Platform
 
-## Getting Started
+CasePilot is a modern solution to delays in the justice system, providing a user-friendly LegalTech platform that helps users track cases, get AI assistance, and resolve disputes online.
 
-First, run the development server:
+![CasePilot Platform](public/legal-hero.svg)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Features
+
+- **AI-Powered Legal Assistant** - Get instant answers to legal queries and document analysis with our advanced AI
+- **Case Tracking & Updates** - Stay updated with real-time case status and important hearing dates
+- **Document Management** - Securely store, organize, and share legal documents in one place
+- **Online Dispute Resolution** - Resolve disputes efficiently through our online mediation platform
+- **Automated Reminders** - Never miss a hearing or deadline with smart notifications
+- **Available on Web & Mobile** - Access your legal matters anytime, anywhere on any device
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15
+- **Language**: TypeScript
+- **UI**: React 19, TailwindCSS
+- **State Management**: React Hooks
+- **API Integration**: Fetch API
+- **Styling**: TailwindCSS, Custom CSS
+
+## 🏗️ Project Structure
+
+```
+frontend-weHack/
+├── public/              # Static assets
+├── src/
+│   ├── app/             # Next.js app router pages
+│   │   ├── lawyer-dashboard/  # Lawyer dashboard pages
+│   │   ├── user-dashboard/    # User dashboard pages
+│   │   ├── login/            # Authentication pages
+│   │   ├── register/         # Registration pages
+│   │   └── ...
+│   ├── components/      # Reusable UI components
+│   └── config.js        # Application configuration
+├── next.config.js       # Next.js configuration
+├── package.json         # Dependencies and scripts
+└── tailwind.config.js   # TailwindCSS configuration
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚦 Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 18.x or higher
+- npm or yarn
 
-## Learn More
+### Installation
 
-To learn more about Next.js, take a look at the following resources:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/frontend-weHack.git
+   cd frontend-weHack
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Configure the backend API:
+   - Open `src/config.js` and update the `BASE_URL` to point to your backend API
+   - Default is set to `http://localhost:5000`
 
-## Deploy on Vercel
+4. Start the development server:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔄 Available Scripts
+
+- `npm run dev` - Start the development server
+- `npm run build` - Build the application for production
+- `npm start` - Start the production server
+- `npm run lint` - Run ESLint to check code quality
+
+## 🌐 Deployment
+
+The application can be deployed to various platforms:
+
+- **Vercel** (Recommended for Next.js apps)
+- **Netlify**
+- **AWS Amplify**
+- **Docker** with a Node.js container
+
+## 👥 User Roles
+
+The application supports two main user roles:
+
+1. **Citizens/Users** - Regular users who can:
+   - Create and track their legal cases
+   - Access AI-powered legal assistance
+   - Manage legal documents
+   - Initiate dispute resolution
+   - Set reminders for important dates
+
+2. **Lawyers** - Legal professionals who can:
+   - View and manage assigned cases
+   - Communicate with clients
+   - Access case documents
+   - Provide legal advice
+   - Track case progress
+
+## 🔒 Authentication
+
+The application uses JWT (JSON Web Tokens) for authentication. Tokens are stored in localStorage and included in API requests.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📞 Contact
+
+For any questions or feedback, please reach out to [your-email@example.com](mailto:your-email@example.com).
