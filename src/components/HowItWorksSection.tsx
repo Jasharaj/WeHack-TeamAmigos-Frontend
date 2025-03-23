@@ -30,7 +30,7 @@ const HowItWorksSection = () => {
     <section className="section-padding bg-green-50" id="how-it-works">
       <div className="container-custom">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-black">How It Works</h2>
           <p className="text-black max-w-2xl mx-auto">
             Our platform simplifies the legal process with just a few easy steps
           </p>
@@ -50,7 +50,7 @@ const HowItWorksSection = () => {
                 <span className="inline-block text-xs font-bold text-green-600 tracking-wider mb-2">
                   STEP {step.number}
                 </span>
-                <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
+                <h3 className="text-xl font-semibold mb-3 text-black">{step.title}</h3>
                 <p className="text-black">{step.description}</p>
               </div>
             </div>

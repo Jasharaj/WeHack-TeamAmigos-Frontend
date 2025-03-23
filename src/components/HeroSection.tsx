@@ -8,10 +8,10 @@ const HeroSection = () => {
         <div className="flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-10 md:mb-0 md:pr-8 animate-fadeIn">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-8">
-              Justice. <span className="text-green-600 relative">
+              <span className="text-black">Justice.</span> <span className="text-green-600 relative">
                 Faster.
                 <span className="absolute bottom-0 left-0 w-full h-1 bg-green-600 transform scale-x-0 transition-transform duration-500 group-hover:scale-x-100"></span>
-              </span> Smarter.
+              </span> <span className="text-black">Smarter.</span>
             </h1>
             <p className="text-lg text-black mb-10 max-w-lg leading-relaxed">
               A modern solution to delays in the justice system. Track cases, get AI assistance, 
@@ -48,7 +48,7 @@ const HeroSection = () => {
                       />
                       
                       {/* Overlay elements */}
-                      <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg">
+                      <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg text-center">
                         <h3 className="text-lg font-semibold text-green-700 mb-1">Modern Justice Platform</h3>
                         <p className="text-sm text-black">Streamlining legal processes with technology</p>
                       </div>

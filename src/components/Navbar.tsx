@@ -9,11 +9,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -21,32 +17,29 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-white/90 backdrop-blur-sm shadow-md py-2' : 'bg-transparent py-4'
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-md shadow-sm transition-all duration-300 ${
+      isScrolled ? 'py-2' : 'py-4'
     }`}>
-      <div className="container-custom flex justify-between items-center">
+      <div className="container-custom h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="text-2xl font-bold text-green-600">CasePilot</span>
+        <Link href="/" className="flex items-center">
+          <span className="text-xl font-bold text-green-600">CasePilot</span>
         </Link>
 
-        {/* Navigation Links */}
-        <div className="hidden md:flex items-center space-x-8">
+        {/* Navigation Links - Centered */}
+        <div className="hidden md:flex items-center justify-center flex-1 space-x-8 px-4">
           <Link href="#features" className="text-black hover:text-green-600 transition-colors">
             Features
           </Link>
           <Link href="#how-it-works" className="text-black hover:text-green-600 transition-colors">
             How It Works
           </Link>
-          <Link href="#about" className="text-black hover:text-green-600 transition-colors">
-            About
-          </Link>
           <Link href="#faq" className="text-black hover:text-green-600 transition-colors">
             FAQ
           </Link>
         </div>
 
-        {/* Auth CTAs */}
+        {/* Auth Buttons */}
         <div className="flex items-center space-x-4">
           <Link 
             href="/login" 
