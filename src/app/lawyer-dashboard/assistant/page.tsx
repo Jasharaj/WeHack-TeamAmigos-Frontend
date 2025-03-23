@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getGeminiResponse } from '@/utils/gemini';
 
 interface Message {
   id: string;
@@ -9,178 +10,167 @@ interface Message {
   timestamp: string;
 }
 
-const mockConversation: Message[] = [
+const mockChatHistory: Message[] = [
   {
     id: '1',
-    role: 'user',
-    content: 'Can you summarize IPC Section 420?',
-    timestamp: '10:30 AM'
-  },
-  {
-    id: '2',
     role: 'assistant',
-    content: 'IPC Section 420 deals with cheating and dishonestly inducing delivery of property. Key points:\n\n1. Punishment: Up to 7 years imprisonment\n2. Fine: Amount not specified\n3. Elements: Deception, fraudulent intention, wrongful gain\n4. Cognizable and non-bailable offense',
-    timestamp: '10:31 AM'
+    content: 'Welcome to CasePilot! I\'m your legal research assistant, ready to help with case law, statutes, and legal analysis. Feel free to ask about recent amendments, landmark judgments, or specific legal provisions.',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 ];
 
-export default function AssistantPage() {
-  const [messages, setMessages] = useState<Message[]>(mockConversation);
+export default function AIAssistant() {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = (e: React.FormEvent) => {
+  // Load messages from localStorage on component mount
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('lawyerChatHistory');
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    } else {
+      setMessages(mockChatHistory);
+      localStorage.setItem('lawyerChatHistory', JSON.stringify(mockChatHistory));
+    }
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('lawyerChatHistory', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isLoading) return;
 
-    const userMessage: Message = {
+    const userMessageObj: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: newMessage,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessageObj]);
     setNewMessage('');
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const assistantMessage: Message = {
+    try {
+      const response = await getGeminiResponse(newMessage, 'lawyer');
+      const assistantMessageObj: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'I understand your query. Let me analyze that for you...',
+        content: response,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      setMessages(prev => [...prev, assistantMessage]);
-    }, 1000);
+      setMessages(prev => [...prev, assistantMessageObj]);
+    } catch (error: any) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `Error: ${error.message}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="h-[calc(100vh-2rem)] flex flex-col space-y-6">
+    <div className="flex flex-col h-screen bg-gray-50 p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-black">AI Legal Assistant</h1>
-        <p className="text-black mt-1">Get instant answers to your legal queries</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-black">Legal Research Assistant</h1>
+        <p className="text-gray-600">Get expert insights on case law, statutes, and legal analysis</p>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 grid grid-cols-3 gap-6">
         {/* Chat Section */}
-        <div className="col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+        <div className="col-span-2 bg-white rounded-lg shadow-sm p-6 flex flex-col">
           {/* Messages */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            {messages.map(message => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+          <div className="flex-1 overflow-y-auto space-y-4 min-h-[400px] mb-4">
+            {messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500 text-center">
+                  No messages yet. Start by asking about recent legal developments!
+                </p>
+              </div>
+            ) : (
+              messages.map((message) => (
                 <div
-                  className={`max-w-[70%] rounded-lg p-4 ${
-                    message.role === 'user'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-black'
-                  }`}
+                  key={message.id}
+                  className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  <span className={`text-xs mt-2 block ${
-                    message.role === 'user' ? 'text-green-100' : 'text-black'
-                  }`}>
-                    {message.timestamp}
-                  </span>
+                  <div
+                    className={`max-w-[70%] rounded-lg p-4 ${
+                      message.role === 'assistant'
+                        ? 'bg-gray-100 text-black'
+                        : 'bg-green-600 text-white'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <span className="text-xs mt-2 opacity-70 block">{message.timestamp}</span>
+                  </div>
+                </div>
+              ))
+            )}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 rounded-lg p-4 max-w-[70%]">
+                  <div className="flex space-x-2 items-center">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSend} className="p-4 border-t border-gray-200">
-            <div className="flex space-x-4">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Ask your legal question..."
-                className="flex-1 rounded-lg form-input"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Send
-              </button>
-            </div>
+          <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Ask about recent amendments, case law, or legal provisions..."
+              className="flex-1 rounded-lg border border-gray-300 p-3 focus:outline-none focus:border-green-500 text-black placeholder-black/70"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              Send
+            </button>
           </form>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Document Upload */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-black mb-4">Upload Document</h2>
-            <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                isUploading ? 'border-green-300 bg-green-50' : 'border-gray-300'
-              }`}
-            >
-              {isUploading ? (
-                <div className="text-green-600">
-                  <p className="font-medium">Uploading...</p>
-                  <p className="text-sm mt-1">Please wait</p>
-                </div>
-              ) : (
-                <div>
-                  <span className="text-2xl">📄</span>
-                  <p className="font-medium text-black mt-2">
-                    Drop your document here
-                  </p>
-                  <p className="text-sm text-black mt-1">
-                    or click to browse
-                  </p>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.doc,.docx"
-                    onChange={() => setIsUploading(true)}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Example Queries */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-black mb-4">Example Queries</h2>
-            <div className="space-y-2">
-              {[
-                'Summarize IPC Section 420',
-                'Find similar cases to Smith vs Corp',
-                'Explain bail provisions',
-                'Recent Supreme Court judgments on property law'
-              ].map((query, i) => (
-                <button
-                  key={i}
-                  onClick={() => setNewMessage(query)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-50 text-sm text-black transition-colors"
-                >
-                  {query}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Precedent Finder */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-black mb-4">Precedent Finder</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Enter keywords..."
-                className="w-full rounded-lg form-input"
-              />
-              <button className="w-full px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors">
-                Search Precedents
+        {/* Example Queries */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4 text-black">Research Topics</h2>
+          <div className="space-y-2">
+            {[
+              'Recent amendments in corporate law',
+              'Key judgments on arbitration',
+              'Latest Supreme Court decisions',
+              'Interpretation of specific performance',
+              'Environmental law developments',
+              'Competition law precedents'
+            ].map((query) => (
+              <button
+                key={query}
+                onClick={() => setNewMessage(query)}
+                className="w-full text-left p-3 rounded-lg hover:bg-gray-50 text-black transition-colors border border-gray-100 hover:border-gray-200"
+              >
+                {query}
               </button>
-            </div>
+            ))}
           </div>
         </div>
       </div>
