@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getGeminiResponse } from '@/utils/gemini';
+import { saveMessages, loadMessages } from '@/utils/chatStorage';
+import ThinkingAnimation from '@/components/ThinkingAnimation';
 
 interface Message {
   id: string;
@@ -9,37 +12,38 @@ interface Message {
   timestamp: string;
 }
 
-const mockChatHistory: Message[] = [
-  {
-    id: '1',
-    role: 'user',
-    content: 'How do I file an RTI application?',
-    timestamp: '10:30 AM'
-  },
-  {
-    id: '2',
-    role: 'assistant',
-    content: `Here's how to file an RTI application:
-
-1. Write your application in simple language
-2. Address it to the Public Information Officer (PIO)
-3. Include your contact details
-4. Pay the required fee (₹10 for general category)
-5. Submit in person or by post
-
-You can also file online through rtionline.gov.in`,
-    timestamp: '10:31 AM'
-  }
+const exampleQuestions = [
+  "What are my rights as a tenant?",
+  "How to file a consumer complaint?",
+  "Explain the process of mutual divorce",
+  "What are fundamental rights in India?",
+  "How to register a company in India?",
+  "What is the process for filing an FIR?"
 ];
 
 export default function AIAssistant() {
-  const [messages, setMessages] = useState<Message[]>(mockChatHistory);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  // Load chat history from localStorage on component mount
+  useEffect(() => {
+    const savedMessages = loadMessages(false);
+    if (savedMessages.length > 0) {
+      setMessages(savedMessages);
+    }
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveMessages(messages, false);
+    }
+  }, [messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -50,45 +54,48 @@ export default function AIAssistant() {
 
     setMessages(prev => [...prev, userMessage]);
     setNewMessage('');
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await getGeminiResponse(newMessage);
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'I understand your question. Let me help you with that...',
+        content: response,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, aiMessage]);
-    }, 1000);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const handleFileUpload = () => {
-    if (selectedFile) {
-      // Handle file upload and summarization
-      console.log('Uploading file:', selectedFile.name);
-      setSelectedFile(null);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'I apologize, but I encountered an error processing your request. Please try again.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="h-[calc(100vh-8rem)]">
-      <div className="flex h-full">
+      <div className="flex h-full gap-6">
         {/* Chat Section */}
-        <div className="flex-1 flex flex-col">
-          <div className="bg-white p-6 rounded-t-xl shadow-sm">
-            <h1 className="text-2xl font-bold text-black">AI Legal Assistant</h1>
-            <p className="text-black mt-1">Get instant answers to your legal questions</p>
+        <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-green-600 to-green-700 p-6">
+            <h1 className="text-2xl font-bold text-white">AI Legal Assistant</h1>
+            <p className="text-green-100 mt-1">Get instant answers to your legal questions</p>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
+            {messages.length === 0 && (
+              <div className="text-center text-gray-500 mt-8">
+                <p className="text-lg">Welcome to your Legal Assistant!</p>
+                <p className="mt-2">Ask any legal question to get started.</p>
+              </div>
+            )}
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -97,36 +104,43 @@ export default function AIAssistant() {
                 <div
                   className={`max-w-2xl rounded-lg p-4 ${
                     message.role === 'user'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-white text-black shadow-sm'
+                      ? 'bg-green-600 text-white ml-12'
+                      : 'bg-white text-black shadow-sm mr-12'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                  <div
-                    className={`text-xs mt-2 ${
-                      message.role === 'user' ? 'text-green-100' : 'text-black'
-                    }`}
-                  >
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <span className={`text-xs mt-2 block ${
+                    message.role === 'user' ? 'text-green-100' : 'text-gray-500'
+                  }`}>
                     {message.timestamp}
-                  </div>
+                  </span>
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white text-black shadow-sm max-w-2xl rounded-lg p-4">
+                  <ThinkingAnimation />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Input Area */}
-          <div className="bg-white p-4 rounded-b-xl shadow-sm">
+          {/* Input */}
+          <div className="border-t border-gray-200 p-4">
             <form onSubmit={handleSendMessage} className="flex space-x-4">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your question..."
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Type your message..."
+                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black placeholder-gray-500"
+                disabled={isLoading}
               />
               <button
                 type="submit"
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 transition-colors duration-200"
+                disabled={isLoading}
               >
                 Send
               </button>
@@ -134,53 +148,19 @@ export default function AIAssistant() {
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-80 bg-white p-6 border-l border-gray-200">
-          <div className="space-y-6">
-            {/* File Upload Section */}
-            <div>
-              <h3 className="text-lg font-semibold text-black mb-4">Document Analysis</h3>
-              <div className="space-y-4">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx"
-                  className="w-full"
-                />
-                {selectedFile && (
-                  <div>
-                    <p className="text-sm text-black mb-2">Selected: {selectedFile.name}</p>
-                    <button
-                      onClick={handleFileUpload}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Analyze Document
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Questions */}
-            <div>
-              <h3 className="text-lg font-semibold text-black mb-4">Quick Questions</h3>
-              <div className="space-y-2">
-                {[
-                  'How to file RTI?',
-                  'What are tenant rights?',
-                  'Consumer protection laws',
-                  'Property registration process'
-                ].map((question) => (
-                  <button
-                    key={question}
-                    onClick={() => setNewMessage(question)}
-                    className="w-full text-left p-2 text-black hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    {question}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Example Questions Sidebar */}
+        <div className="w-80 bg-white p-6 rounded-xl shadow-lg">
+          <h2 className="text-lg font-semibold text-black mb-4">Example Questions</h2>
+          <div className="space-y-2">
+            {exampleQuestions.map((question, index) => (
+              <button
+                key={index}
+                onClick={() => setNewMessage(question)}
+                className="w-full text-left p-3 rounded-lg hover:bg-gray-50 text-black transition-colors text-sm border border-gray-100 hover:border-green-200"
+              >
+                {question}
+              </button>
+            ))}
           </div>
         </div>
       </div>
