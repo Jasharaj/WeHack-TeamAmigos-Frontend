@@ -1,183 +1,315 @@
 'use client';
 
-import { useState } from 'react';
-
-interface Dispute {
-  id: string;
-  partyA: string;
-  partyB: string;
-  summary: string;
-  date: string;
-  status: 'New' | 'Under Review' | 'Forwarded' | 'Resolved';
-  aiSuggestion?: string;
-}
-
-const mockDisputes: Dispute[] = [
-  {
-    id: 'DSP001',
-    partyA: 'John Smith',
-    partyB: 'Tech Corp Ltd.',
-    summary: 'Contract breach regarding software development project',
-    date: '2025-03-20',
-    status: 'New',
-    aiSuggestion: 'Based on similar cases, mediation is recommended. Contract terms appear to have ambiguity in delivery timeline definitions.'
-  },
-  {
-    id: 'DSP002',
-    partyA: 'Sarah Johnson',
-    partyB: 'Property Holdings Inc.',
-    summary: 'Rental agreement dispute',
-    date: '2025-03-18',
-    status: 'Under Review',
-    aiSuggestion: 'Recommend settlement: Similar cases show 80% resolution rate through mutual agreement on maintenance responsibilities.'
-  }
-];
+import { useState, useEffect } from 'react';
+import { loadDisputes, saveDisputes, type Dispute } from '@/utils/dashboardStorage';
 
 const statusColors = {
-  'New': 'bg-yellow-100 text-yellow-800',
-  'Under Review': 'bg-blue-100 text-blue-800',
-  'Forwarded': 'bg-purple-100 text-purple-800',
-  'Resolved': 'bg-green-100 text-green-800'
+  pending: 'bg-yellow-100 text-yellow-800',
+  mediation: 'bg-blue-100 text-blue-800',
+  resolved: 'bg-green-100 text-green-800',
+  court: 'bg-purple-100 text-purple-800'
+};
+
+const categoryIcons = {
+  civil: '⚖️',
+  criminal: '🏛️',
+  corporate: '🏢',
+  family: '👨‍👩‍👧‍👦',
+  property: '🏠'
 };
 
 export default function DisputesPage() {
-  const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
-  const [showAISuggestion, setShowAISuggestion] = useState(false);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [showNewDisputeModal, setShowNewDisputeModal] = useState(false);
+  const [newDispute, setNewDispute] = useState<Partial<Omit<Dispute, 'parties'>> & { parties: Partial<Dispute['parties']> }>({
+    title: '',
+    description: '',
+    parties: {
+      plaintiff: '',
+      defendant: ''
+    },
+    status: 'pending',
+    category: 'civil'
+  });
+
+  // Load disputes from localStorage on mount
+  useEffect(() => {
+    const savedDisputes = loadDisputes();
+    setDisputes(savedDisputes);
+  }, []);
+
+  // Save disputes to localStorage whenever they change
+  useEffect(() => {
+    saveDisputes(disputes);
+  }, [disputes]);
+
+  const handleAddDispute = (e: React.FormEvent) => {
+    e.preventDefault();
+    const dispute: Dispute = {
+      id: Date.now().toString(),
+      title: newDispute.title || '',
+      description: newDispute.description || '',
+      parties: {
+        plaintiff: newDispute.parties?.plaintiff || '',
+        defendant: newDispute.parties?.defendant || ''
+      },
+      status: newDispute.status as 'pending' | 'mediation' | 'resolved' | 'court',
+      category: newDispute.category as 'civil' | 'criminal' | 'corporate' | 'family' | 'property',
+      dateCreated: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+
+    setDisputes(prev => [...prev, dispute]);
+    setNewDispute({
+      title: '',
+      description: '',
+      parties: {
+        plaintiff: '',
+        defendant: ''
+      },
+      status: 'pending',
+      category: 'civil'
+    });
+    setShowNewDisputeModal(false);
+  };
+
+  const handleUpdateStatus = (id: string, newStatus: Dispute['status']) => {
+    setDisputes(prev =>
+      prev.map(dispute =>
+        dispute.id === id
+          ? { ...dispute, status: newStatus, lastUpdated: new Date().toISOString() }
+          : dispute
+      )
+    );
+  };
+
+  const handleDeleteDispute = (id: string) => {
+    setDisputes(prev => prev.filter(dispute => dispute.id !== id));
+  };
+
+  const activeDisputes = disputes.filter(d => d.status !== 'resolved');
+  const resolvedDisputes = disputes.filter(d => d.status === 'resolved');
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-black">Online Dispute Resolution</h1>
-          <p className="text-black mt-1">Manage and resolve disputes efficiently</p>
+          <h1 className="text-2xl font-bold text-black">Legal Disputes</h1>
+          <p className="text-black mt-1">Manage and track your legal cases</p>
         </div>
-        <div className="flex space-x-4">
-          <select className="form-input px-4 py-2 rounded-lg">
-            <option value="all">All Statuses</option>
-            <option value="new">New</option>
-            <option value="review">Under Review</option>
-            <option value="forwarded">Forwarded</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-            New Dispute
-          </button>
-        </div>
+        <button
+          onClick={() => setShowNewDisputeModal(true)}
+          className="px-4 py-2 font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+        >
+          Add New Dispute
+        </button>
       </div>
 
-      {/* Disputes Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Parties</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Summary</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {mockDisputes.map((dispute) => (
-              <tr key={dispute.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">
-                  {dispute.id}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-black">{dispute.partyA}</div>
-                  <div className="text-sm text-black">vs</div>
-                  <div className="text-sm text-black">{dispute.partyB}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <p className="text-sm text-black line-clamp-2">{dispute.summary}</p>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
-                  {dispute.date}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[dispute.status]}`}>
-                    {dispute.status}
+      {/* Active Disputes */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-black mb-4">Active Disputes</h2>
+        <div className="space-y-4">
+          {activeDisputes.map(dispute => (
+            <div
+              key={dispute.id}
+              className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+            >
+              <div className="flex justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl" role="img" aria-label={dispute.category}>
+                      {categoryIcons[dispute.category]}
+                    </span>
+                    <h3 className="font-medium text-black">{dispute.title}</h3>
+                  </div>
+                  <p className="text-sm text-gray-600">{dispute.description}</p>
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                    <div>
+                      <span className="font-medium">Plaintiff:</span> {dispute.parties.plaintiff}
+                    </div>
+                    <div>
+                      <span className="font-medium">Defendant:</span> {dispute.parties.defendant}
+                    </div>
+                    <div>
+                      <span className="font-medium">Last Updated:</span>{' '}
+                      {new Date(dispute.lastUpdated).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end space-y-2">
+                  <span className={`px-2 py-1 rounded-full text-xs ${statusColors[dispute.status]}`}>
+                    {dispute.status.charAt(0).toUpperCase() + dispute.status.slice(1)}
                   </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                  <button
-                    onClick={() => {
-                      setSelectedDispute(dispute);
-                      setShowAISuggestion(true);
-                    }}
-                    className="text-black hover:text-black"
-                  >
-                    View
-                  </button>
-                  <button className="text-black hover:text-black">
-                    Forward
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <div className="flex space-x-2">
+                    <select
+                      value={dispute.status}
+                      onChange={(e) => handleUpdateStatus(dispute.id, e.target.value as Dispute['status'])}
+                      className="text-sm border border-gray-300 rounded px-2 py-1"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="mediation">Mediation</option>
+                      <option value="court">Court</option>
+                      <option value="resolved">Resolved</option>
+                    </select>
+                    <button
+                      onClick={() => handleDeleteDispute(dispute.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {activeDisputes.length === 0 && (
+            <p className="text-center text-gray-500 py-4">No active disputes</p>
+          )}
+        </div>
       </div>
 
-      {/* AI Suggestion Modal */}
-      {showAISuggestion && selectedDispute && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full m-4">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-xl font-bold text-black">Dispute Analysis</h2>
-              <button
-                onClick={() => setShowAISuggestion(false)}
-                className="text-black hover:text-black"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Dispute Details */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-black">Party A</p>
-                    <p className="font-medium">{selectedDispute.partyA}</p>
+      {/* Resolved Disputes */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-black mb-4">Resolved Disputes</h2>
+        <div className="space-y-4">
+          {resolvedDisputes.map(dispute => (
+            <div
+              key={dispute.id}
+              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+            >
+              <div className="flex justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl" role="img" aria-label={dispute.category}>
+                      {categoryIcons[dispute.category]}
+                    </span>
+                    <h3 className="font-medium text-gray-600">{dispute.title}</h3>
                   </div>
-                  <div>
-                    <p className="text-sm text-black">Party B</p>
-                    <p className="font-medium">{selectedDispute.partyB}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm text-black">Summary</p>
-                    <p className="font-medium">{selectedDispute.summary}</p>
+                  <p className="text-sm text-gray-500">{dispute.description}</p>
+                  <div className="text-sm text-gray-500">
+                    Resolved on: {new Date(dispute.lastUpdated).toLocaleDateString()}
                   </div>
                 </div>
-              </div>
-
-              {/* AI Suggestion */}
-              <div>
-                <h3 className="text-lg font-semibold text-black mb-2">AI Recommendation</h3>
-                <div className="bg-green-50 rounded-lg p-4 text-green-800">
-                  {selectedDispute.aiSuggestion}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4 mt-6">
                 <button
-                  onClick={() => setShowAISuggestion(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-black hover:bg-gray-50"
+                  onClick={() => handleDeleteDispute(dispute.id)}
+                  className="text-red-600 hover:text-red-800"
                 >
-                  Close
-                </button>
-                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                  Accept Suggestion
-                </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  Forward to Mediation
+                  Delete
                 </button>
               </div>
             </div>
+          ))}
+          {resolvedDisputes.length === 0 && (
+            <p className="text-center text-gray-500 py-4">No resolved disputes</p>
+          )}
+        </div>
+      </div>
+
+      {/* New Dispute Modal */}
+      {showNewDisputeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full">
+            <h2 className="text-xl font-bold text-black mb-4">Add New Dispute</h2>
+            <form onSubmit={handleAddDispute} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-black">Title</label>
+                <input
+                  type="text"
+                  value={newDispute.title}
+                  onChange={e => setNewDispute(prev => ({ ...prev, title: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black">Description</label>
+                <textarea
+                  value={newDispute.description}
+                  onChange={e => setNewDispute(prev => ({ ...prev, description: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  rows={3}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-black">Plaintiff</label>
+                  <input
+                    type="text"
+                    value={newDispute.parties?.plaintiff || ''}
+                    onChange={e => setNewDispute(prev => ({
+                      ...prev,
+                      parties: { 
+                        ...prev.parties || {},
+                        plaintiff: e.target.value
+                      }
+                    }))}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black">Defendant</label>
+                  <input
+                    type="text"
+                    value={newDispute.parties?.defendant || ''}
+                    onChange={e => setNewDispute(prev => ({
+                      ...prev,
+                      parties: {
+                        ...prev.parties || {},
+                        defendant: e.target.value
+                      }
+                    }))}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-black">Category</label>
+                  <select
+                    value={newDispute.category}
+                    onChange={e => setNewDispute(prev => ({ ...prev, category: e.target.value as Dispute['category'] }))}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  >
+                    <option value="civil">Civil</option>
+                    <option value="criminal">Criminal</option>
+                    <option value="corporate">Corporate</option>
+                    <option value="family">Family</option>
+                    <option value="property">Property</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black">Initial Status</label>
+                  <select
+                    value={newDispute.status}
+                    onChange={e => setNewDispute(prev => ({ ...prev, status: e.target.value as Dispute['status'] }))}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="mediation">Mediation</option>
+                    <option value="court">Court</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex space-x-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Add Dispute
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNewDisputeModal(false)}
+                  className="flex-1 bg-gray-200 text-black px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1,77 +1,100 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { loadDocuments, saveDocuments, type Document } from '@/utils/dashboardStorage';
 
-interface Document {
-  id: string;
-  name: string;
-  type: string;
-  size: string;
-  uploadedOn: string;
-  caseId?: string;
-  caseName?: string;
-  status: 'Verified' | 'Pending' | 'Rejected';
-}
-
-const mockDocuments: Document[] = [
-  {
-    id: 'DOC1',
-    name: 'Property Deed.pdf',
-    type: 'PDF',
-    size: '2.4 MB',
-    uploadedOn: '2025-03-20',
-    caseId: 'CASE123',
-    caseName: 'Property Dispute - Smith vs. Johnson',
-    status: 'Verified'
-  },
-  {
-    id: 'DOC2',
-    name: 'Evidence Photos.zip',
-    type: 'ZIP',
-    size: '5.1 MB',
-    uploadedOn: '2025-03-20',
-    caseId: 'CASE123',
-    caseName: 'Property Dispute - Smith vs. Johnson',
-    status: 'Verified'
-  },
-  {
-    id: 'DOC3',
-    name: 'Contract Agreement.pdf',
-    type: 'PDF',
-    size: '1.8 MB',
-    uploadedOn: '2025-03-21',
-    status: 'Pending'
-  }
-];
+const categoryIcons = {
+  contract: '📄',
+  evidence: '🔍',
+  court: '⚖️',
+  identification: '🪪',
+  other: '📎'
+};
 
 const statusColors = {
-  Verified: 'bg-green-100 text-green-800',
-  Pending: 'bg-yellow-100 text-yellow-800',
-  Rejected: 'bg-red-100 text-red-800'
+  pending: 'bg-yellow-100 text-yellow-800',
+  approved: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800'
 };
 
 export default function DocumentsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [newDocument, setNewDocument] = useState<Partial<Document>>({
+    title: '',
+    description: '',
+    category: 'other',
+    fileName: '',
+    fileType: '',
+    fileSize: 0,
+    status: 'pending'
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const filteredDocuments = mockDocuments.filter(doc =>
-    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.caseName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Load documents from localStorage on mount
+  useEffect(() => {
+    const savedDocuments = loadDocuments();
+    setDocuments(savedDocuments);
+  }, []);
+
+  // Save documents to localStorage whenever they change
+  useEffect(() => {
+    saveDocuments(documents);
+  }, [documents]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setSelectedFiles(e.target.files);
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setNewDocument(prev => ({
+        ...prev,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size
+      }));
     }
   };
 
   const handleUpload = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle file upload
-    console.log('Uploading files:', selectedFiles);
+    if (!selectedFile) return;
+
+    const document: Document = {
+      id: Date.now().toString(),
+      title: newDocument.title || selectedFile.name,
+      description: newDocument.description || '',
+      category: newDocument.category as Document['category'],
+      dateUploaded: new Date().toISOString(),
+      fileName: selectedFile.name,
+      fileType: selectedFile.type,
+      fileSize: selectedFile.size,
+      status: 'pending'
+    };
+
+    setDocuments(prev => [...prev, document]);
+    setNewDocument({
+      title: '',
+      description: '',
+      category: 'other',
+      fileName: '',
+      fileType: '',
+      fileSize: 0,
+      status: 'pending'
+    });
+    setSelectedFile(null);
     setShowUploadModal(false);
-    setSelectedFiles(null);
+  };
+
+  const handleDeleteDocument = (id: string) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== id));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -79,129 +102,137 @@ export default function DocumentsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-black">Documents</h1>
-          <p className="text-black mt-1">Manage and organize your legal documents</p>
+          <h1 className="text-2xl font-bold text-black">My Documents</h1>
+          <p className="text-black mt-1">Upload and manage your legal documents</p>
         </div>
         <button
           onClick={() => setShowUploadModal(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="px-4 py-2 font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
         >
-          Upload Documents
+          Upload Document
         </button>
       </div>
 
-      {/* Search */}
-      <div className="flex space-x-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search documents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
+      {/* Documents Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {documents.map(doc => (
+          <div
+            key={doc.id}
+            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl" role="img" aria-label={doc.category}>
+                    {categoryIcons[doc.category]}
+                  </span>
+                  <h3 className="font-medium text-black truncate">{doc.title}</h3>
+                </div>
+                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{doc.description}</p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm text-gray-500">
+                    File: {doc.fileName}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Size: {formatFileSize(doc.fileSize)}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Uploaded: {new Date(doc.dateUploaded).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <span className={`px-2 py-1 rounded-full text-xs ${statusColors[doc.status]}`}>
+                {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+              </span>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleDeleteDocument(doc.id)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Documents Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Document</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Related Case</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Uploaded On</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredDocuments.map((doc) => (
-              <tr key={doc.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">
-                      {doc.type === 'PDF' ? '📄' : doc.type === 'ZIP' ? '📦' : '📎'}
-                    </span>
-                    <div>
-                      <div className="text-sm font-medium text-black">{doc.name}</div>
-                      <div className="text-sm text-black">{doc.size}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {doc.caseName ? (
-                    <div>
-                      <div className="text-sm text-black">{doc.caseName}</div>
-                      <div className="text-sm text-black">Case #{doc.caseId}</div>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-black">-</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
-                  {doc.uploadedOn}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs rounded-full ${statusColors[doc.status]}`}>
-                    {doc.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
-                  <button className="text-green-600 hover:text-green-700 mr-4">
-                    Download
-                  </button>
-                  <button className="text-black hover:text-gray-600">
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {documents.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <p className="text-gray-500">No documents uploaded yet.</p>
+        </div>
+      )}
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-black mb-4">Upload Documents</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full">
+            <h2 className="text-xl font-bold text-black mb-4">Upload Document</h2>
             <form onSubmit={handleUpload} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-black mb-2">
-                  Select Files
-                </label>
+                <label className="block text-sm font-medium text-black">File</label>
                 <input
                   type="file"
-                  multiple
                   onChange={handleFileChange}
-                  className="w-full"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
+                  className="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-green-50 file:text-green-700
+                    hover:file:bg-green-100"
+                  required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-black mb-2">
-                  Related Case (Optional)
-                </label>
-                <select className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                  <option value="">Select a case...</option>
-                  <option value="CASE123">Property Dispute - Smith vs. Johnson</option>
-                  <option value="CASE124">Consumer Complaint - Tech Solutions</option>
+                <label className="block text-sm font-medium text-black">Title</label>
+                <input
+                  type="text"
+                  value={newDocument.title}
+                  onChange={e => setNewDocument(prev => ({ ...prev, title: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  placeholder="Enter document title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black">Description</label>
+                <textarea
+                  value={newDocument.description}
+                  onChange={e => setNewDocument(prev => ({ ...prev, description: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  rows={3}
+                  placeholder="Enter document description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black">Category</label>
+                <select
+                  value={newDocument.category}
+                  onChange={e => setNewDocument(prev => ({ ...prev, category: e.target.value as Document['category'] }))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                >
+                  <option value="contract">Contract</option>
+                  <option value="evidence">Evidence</option>
+                  <option value="court">Court Document</option>
+                  <option value="identification">Identification</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
-              <div className="flex justify-end space-x-4 mt-6">
+              <div className="flex space-x-4">
+                <button
+                  type="submit"
+                  disabled={!selectedFile}
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                >
+                  Upload
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowUploadModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-black hover:bg-gray-50"
+                  className="flex-1 bg-gray-200 text-black px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Upload
                 </button>
               </div>
             </form>
