@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, 
@@ -25,9 +24,10 @@ import {
   UserCheck,
   Scale
 } from 'lucide-react';
-import config from '../../../config';
+import config from '@/config';
 
 interface ProfileData {
+  _id?: string;
   name: string;
   email: string;
   phone: string;
@@ -35,16 +35,15 @@ interface ProfileData {
   licenseNumber: string;
   specialization: string;
   yearsOfExperience: number;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export default function LawyerProfile() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'personal' | 'security' | 'notifications' | 'preferences'>('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
@@ -53,67 +52,50 @@ export default function LawyerProfile() {
     role: 'lawyer',
     licenseNumber: '',
     specialization: '',
-    yearsOfExperience: 0,
-    createdAt: ''
+    yearsOfExperience: 0
   });
 
   const [tempData, setTempData] = useState(profileData);
 
   // Fetch lawyer profile data
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    
-    if (!token || role !== 'lawyer') {
-      router.push('/login');
-      return;
-    }
-
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch(`${config.BASE_URL}/api/v1/lawyer/profile`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Server returned non-JSON response. Please check if backend is running correctly.');
-        }
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to fetch profile');
-        }
-
-        if (data.success) {
-          setProfileData(data.data);
-          setTempData(data.data);
-        } else {
-          throw new Error(data.message || 'Failed to fetch profile');
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch profile');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProfile();
-  }, [router]);
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${config.BASE_URL}/api/v1/lawyers/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile data');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setProfileData(result.data);
+        setTempData(result.data);
+      } else {
+        setError(result.message || 'Failed to fetch profile data');
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      setError('Failed to fetch profile data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const tabs = [
     { id: 'personal' as const, label: 'Personal Info', icon: User },
@@ -126,38 +108,38 @@ export default function LawyerProfile() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('No authentication token found');
+        setError('No authentication token found');
+        return;
       }
 
-      const response = await fetch(`${config.BASE_URL}/api/v1/lawyer/profile`, {
+      const response = await fetch(`${config.BASE_URL}/api/v1/lawyers/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: tempData.name,
           email: tempData.email,
-          phone: tempData.phone,
-        }),
+          phone: tempData.phone
+        })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to update profile');
+        throw new Error('Failed to update profile');
       }
 
-      if (data.success) {
-        setProfileData(tempData);
+      const result = await response.json();
+      if (result.success) {
+        setProfileData(result.data);
         setIsEditing(false);
-        console.log('Profile updated successfully:', data.data);
+        setError('');
       } else {
-        throw new Error(data.message || 'Failed to update profile');
+        setError(result.message || 'Failed to update profile');
       }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update profile');
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError('Failed to update profile');
     }
   };
 
@@ -169,32 +151,36 @@ export default function LawyerProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30">
       {/* Loading State */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full"
-          />
-        </div>
+      {loading && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center items-center min-h-[60vh]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-slate-600">Loading profile...</span>
+          </div>
+        </motion.div>
       )}
 
       {/* Error State */}
-      {error && (
-        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50">
-          <div className="flex items-center gap-2">
+      {error && !loading && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md mx-auto mt-8 p-4 bg-red-50 border border-red-200 rounded-lg"
+        >
+          <div className="flex items-center gap-2 text-red-800">
             <X className="w-5 h-5" />
             <span>{error}</span>
-            <button
-              onClick={() => setError(null)}
-              className="ml-2 text-red-700 hover:text-red-900"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
-        </div>
+        </motion.div>
       )}
 
+      {/* Main Content */}
+      {!loading && !error && (
+        <>
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -226,7 +212,7 @@ export default function LawyerProfile() {
         >
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {profileData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+              {profileData.name.split(' ').map(n => n[0]).join('')}
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -249,7 +235,7 @@ export default function LawyerProfile() {
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {profileData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                  {profileData.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -261,10 +247,10 @@ export default function LawyerProfile() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">{profileData.name}</h2>
-                <p className="text-emerald-700 font-medium">Legal Professional</p>
+                <p className="text-emerald-700 font-medium">Legal Counsel</p>
                 <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
                   <Calendar className="w-4 h-4" />
-                  Member since {new Date(profileData.createdAt).getFullYear() || '2025'}
+                  {profileData.yearsOfExperience} years experience
                 </div>
               </div>
             </div>
@@ -274,7 +260,7 @@ export default function LawyerProfile() {
                   <UserCheck className="w-4 h-4" />
                   Verified Lawyer
                 </div>
-                <p className="text-xs text-slate-500">Bar #: {profileData.licenseNumber}</p>
+                <p className="text-xs text-slate-500">License #: {profileData.licenseNumber}</p>
               </div>
             </div>
           </div>
@@ -378,7 +364,7 @@ export default function LawyerProfile() {
                         onChange={(e) => setTempData(prev => ({ ...prev, name: e.target.value }))}
                         disabled={!isEditing}
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all disabled:bg-slate-50"
-                        placeholder="John Doe"
+                        placeholder="Enter full name"
                       />
                     </div>
 
@@ -393,7 +379,7 @@ export default function LawyerProfile() {
                         onChange={(e) => setTempData(prev => ({ ...prev, email: e.target.value }))}
                         disabled={!isEditing}
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all disabled:bg-slate-50"
-                        placeholder="john@lawyer.com"
+                        placeholder="alice@citizen.com"
                       />
                     </div>
 
@@ -421,9 +407,9 @@ export default function LawyerProfile() {
                         type="text"
                         value={isEditing ? tempData.licenseNumber : profileData.licenseNumber}
                         onChange={(e) => setTempData(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                        disabled={true} // License number shouldn't be editable typically
+                        disabled={!isEditing}
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all disabled:bg-slate-50"
-                        placeholder="BAR123456"
+                        placeholder="Enter license number"
                       />
                     </div>
 
@@ -436,9 +422,9 @@ export default function LawyerProfile() {
                         type="text"
                         value={isEditing ? tempData.specialization : profileData.specialization}
                         onChange={(e) => setTempData(prev => ({ ...prev, specialization: e.target.value }))}
-                        disabled={true} // Specialization typically not editable through profile
+                        disabled={!isEditing}
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all disabled:bg-slate-50"
-                        placeholder="Corporate Law, Family Law"
+                        placeholder="e.g. Corporate Law, Criminal Defense"
                       />
                     </div>
 
@@ -451,13 +437,29 @@ export default function LawyerProfile() {
                         type="number"
                         value={isEditing ? tempData.yearsOfExperience : profileData.yearsOfExperience}
                         onChange={(e) => setTempData(prev => ({ ...prev, yearsOfExperience: parseInt(e.target.value) || 0 }))}
-                        disabled={true} // Years of experience typically calculated or set elsewhere
+                        disabled={!isEditing}
                         className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all disabled:bg-slate-50"
-                        placeholder="0"
+                        placeholder="Years of experience"
+                        min="0"
                       />
                     </div>
                   </div>
 
+                  {/* Legal Specialization */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <Settings className="w-4 h-4 text-emerald-600" />
+                      Legal Specialization
+                    </label>
+                    <input
+                      type="text"
+                      value={isEditing ? tempData.specialization : profileData.specialization}
+                      onChange={(e) => setTempData(prev => ({ ...prev, specialization: e.target.value }))}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all disabled:bg-slate-50"
+                      placeholder="Corporate Law, Contract Disputes"
+                    />
+                  </div>
                 </motion.div>
               )}
 
@@ -616,7 +618,8 @@ export default function LawyerProfile() {
             </AnimatePresence>
           </div>
         </motion.div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

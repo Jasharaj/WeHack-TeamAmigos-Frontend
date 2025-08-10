@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { Scale } from 'lucide-react';
 import config from '@/config';
 
 const sidebarLinks = [
@@ -156,12 +157,17 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-64 h-screen bg-white border-r border-slate-200 flex flex-col shadow-sm">
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <Link href="/lawyer-dashboard" className="flex items-center space-x-2">
-          <span className="text-2xl">⚖️</span>
-          <span className="text-xl font-bold text-black">CasePilot</span>
+      <div className="p-6 border-b border-slate-200">
+        <Link href="/lawyer-dashboard" className="flex items-center space-x-3 group">
+          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200">
+            <Scale className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">CasePilot</span>
+            <div className="text-xs text-slate-500 font-medium">Legal Management</div>
+          </div>
         </Link>
       </div>
 
@@ -183,25 +189,25 @@ export default function Sidebar() {
       </nav>
 
       {/* User Section */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-slate-200 bg-slate-50">
         {/* Lawyer Profile Info */}
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+        <div className="flex items-center space-x-3 mb-4 p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-700 font-bold">
             {lawyerProfile ? lawyerProfile.name.charAt(0) : ''}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {loading ? (
               <div className="space-y-1">
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-24 bg-slate-200 rounded animate-pulse"></div>
+                <div className="h-3 w-32 bg-slate-200 rounded animate-pulse"></div>
               </div>
             ) : lawyerProfile ? (
               <>
-                <p className="text-sm font-medium text-black">{lawyerProfile.name}</p>
-                <p className="text-xs text-gray-600">{lawyerProfile.email}</p>
+                <p className="text-sm font-semibold text-slate-900 truncate">{lawyerProfile.name}</p>
+                <p className="text-xs text-slate-600 truncate">{lawyerProfile.email}</p>
               </>
             ) : (
-              <p className="text-sm text-gray-500">Error loading profile</p>
+              <p className="text-sm text-slate-500">Error loading profile</p>
             )}
           </div>
         </div>
@@ -210,9 +216,9 @@ export default function Sidebar() {
         <button
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="sidebar-link w-full text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center justify-center disabled:opacity-50"
+          className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 font-medium disabled:opacity-50 border border-red-200 hover:border-red-300"
         >
-          <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
           <span>{isLoggingOut ? 'Logging out...' : 'Sign Out'}</span>

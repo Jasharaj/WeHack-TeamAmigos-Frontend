@@ -31,7 +31,7 @@ interface Dispute {
   status: 'pending' | 'mediation' | 'resolved' | 'court';
   category: 'civil' | 'criminal' | 'corporate' | 'family' | 'property';
   dateCreated: string;
-  lastUpdated: string;
+  lastUpdated?: string;
   nextHearing?: string;
   documents?: string[];
 }
@@ -41,11 +41,12 @@ interface Document {
   title: string;
   description: string;
   category: 'contract' | 'evidence' | 'court' | 'identification' | 'other';
-  dateUploaded: string;
+  uploadDate: string;
   fileName: string;
   fileType: string;
   fileSize: number;
   status: 'pending' | 'approved' | 'rejected';
+  tags: string[];
 }
 
 const REPORTS_KEY = 'lawyer_reports';

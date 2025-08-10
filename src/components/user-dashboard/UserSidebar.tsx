@@ -3,71 +3,55 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { 
+  Home, 
+  Scale, 
+  Bell, 
+  Bot, 
+  Gavel, 
+  FileText, 
+  User, 
+  LogOut,
+  Loader2
+} from 'lucide-react';
 import config from '@/config';
 
 const sidebarLinks = [
   {
     href: '/user-dashboard',
     label: 'Dashboard',
-    icon: (
-      <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
+    icon: Home,
   },
   {
     href: '/user-dashboard/cases',
     label: 'My Cases',
-    icon: (
-      <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-    ),
+    icon: Scale,
   },
   {
     href: '/user-dashboard/reminders',
     label: 'Reminders',
-    icon: (
-      <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
+    icon: Bell,
   },
   {
     href: '/user-dashboard/assistant',
     label: 'AI Assistant',
-    icon: (
-      <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-      </svg>
-    ),
+    icon: Bot,
   },
   {
     href: '/user-dashboard/disputes',
     label: 'Disputes',
-    icon: (
-      <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-      </svg>
-    ),
+    icon: Gavel,
   },
   {
     href: '/user-dashboard/documents',
     label: 'Documents',
-    icon: (
-      <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
+    icon: FileText,
   },
   {
     href: '/user-dashboard/profile',
     label: 'Profile',
-    icon: (
-      <svg className="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
+    icon: User,
   }
 ];
 
@@ -155,69 +139,123 @@ const UserSidebar = () => {
   };
 
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-64 h-screen bg-white/80 backdrop-blur-xl border-r border-slate-200 flex flex-col relative overflow-hidden shadow-lg">
+      {/* Sidebar gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/50 via-transparent to-teal-50/30"></div>
+      
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <Link href="/user-dashboard" className="flex items-center space-x-2">
-          <span className="text-2xl">⚖️</span>
-          <span className="text-xl font-bold text-black">CasePilot</span>
+      <div className="relative z-10 p-6 border-b border-slate-200">
+        <Link href="/user-dashboard" className="flex items-center space-x-3 group">
+          <motion.div 
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200"
+          >
+            <Scale className="w-6 h-6 text-white" />
+          </motion.div>
+          <div>
+            <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              CasePilot
+            </span>
+            <div className="text-xs text-slate-500 font-medium">Legal Management</div>
+          </div>
         </Link>
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        <div className="px-4 space-y-1">
-          {sidebarLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                pathname === link.href
-                  ? 'bg-green-50 text-green-600'
-                  : 'text-black hover:bg-gray-50'
-              }`}
-            >
-              {link.icon}
-              <span>{link.label}</span>
-            </Link>
-          ))}
+      <nav className="relative z-10 flex-1 overflow-y-auto py-4">
+        <div className="px-4 space-y-2">
+          {sidebarLinks.map((link, index) => {
+            const IconComponent = link.icon;
+            return (
+              <motion.div
+                key={link.href}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <Link
+                  href={link.href}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group ${
+                    pathname === link.href
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm'
+                      : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 border border-transparent'
+                  }`}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    className={`${
+                      pathname === link.href
+                        ? 'text-emerald-600'
+                        : 'text-slate-500 group-hover:text-emerald-600'
+                    }`}
+                  >
+                    <IconComponent className="w-5 h-5" />
+                  </motion.div>
+                  <span className="font-medium">{link.label}</span>
+                  {pathname === link.href && (
+                    <motion.div
+                      layoutId="activeIndicator"
+                      className="w-2 h-2 bg-emerald-500 rounded-full ml-auto"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
       </nav>
 
       {/* User Info */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium">
+      <div className="relative z-10 p-4 border-t border-slate-200">
+        <motion.div 
+          className="flex items-center space-x-3 p-3 rounded-xl bg-slate-50 border border-slate-200"
+          whileHover={{ scale: 1.02 }}
+        >
+          <motion.div 
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg shadow-lg"
+            whileHover={{ rotate: 10 }}
+          >
             {userProfile ? userProfile.name.charAt(0) : ''}
-          </div>
+          </motion.div>
           <div className="flex-1">
             {loading ? (
               <div className="space-y-1">
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-24 bg-slate-200 rounded animate-pulse"></div>
+                <div className="h-3 w-32 bg-slate-200 rounded animate-pulse"></div>
               </div>
             ) : userProfile ? (
               <>
-                <p className="text-sm font-medium text-black">{userProfile.name}</p>
-                <p className="text-xs text-gray-600">{userProfile.email}</p>
+                <p className="text-sm font-semibold text-slate-800">{userProfile.name}</p>
+                <p className="text-xs text-slate-500">{userProfile.email}</p>
               </>
             ) : (
-              <p className="text-sm text-gray-500">Error loading profile</p>
+              <p className="text-sm text-slate-500">Error loading profile</p>
             )}
           </div>
-        </div>
+        </motion.div>
         
         {/* Logout Button */}
-        <button
+        <motion.button
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-3 text-sm font-medium text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all duration-300 disabled:opacity-50 border border-red-200"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+          <motion.div
+            whileHover={{ rotate: 180 }}
+            transition={{ duration: 0.3 }}
+          >
+            {isLoggingOut ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <LogOut className="w-4 h-4" />
+            )}
+          </motion.div>
           <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
-        </button>
+        </motion.button>
       </div>
     </div>
   );

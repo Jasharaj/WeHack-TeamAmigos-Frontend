@@ -1,8 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  FileText, 
+  Calendar, 
+  User, 
+  Mail, 
+  Phone, 
+  Clock, 
+  ChevronRight,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  Scale,
+  Printer,
+  Edit,
+  Eye,
+  Users
+} from 'lucide-react';
 import config from '@/config';
 
 interface Case {
@@ -28,30 +47,39 @@ interface Case {
 }
 
 // Timeline event component
-const TimelineItem = ({ date, event, description }: { date: string; event: string; description: string }) => (
-  <div className="relative pb-8 last:pb-0">
-    <div className="absolute left-4 -ml-0.5 mt-1.5 h-full w-0.5 bg-gray-200 last:hidden"></div>
-    <div className="relative flex items-start space-x-3">
-      <div className="relative">
-        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ring-8 ring-white">
-          <span className="text-green-600 text-sm">📅</span>
+const TimelineItem = ({ date, event, description, index }: { date: string; event: string; description: string; index: number }) => (
+  <motion.div 
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay: index * 0.1 }}
+    className="relative pb-8 last:pb-0"
+  >
+    <div className="absolute left-4 -ml-0.5 mt-1.5 h-full w-0.5 bg-gradient-to-b from-emerald-200 to-teal-200 last:hidden"></div>
+    <div className="relative flex items-start space-x-4">
+      <motion.div 
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: index * 0.1 + 0.2 }}
+        className="relative"
+      >
+        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+          <Calendar className="w-5 h-5 text-white" />
         </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div>
-          <div className="text-sm text-gray-500">{date}</div>
-          <p className="mt-0.5 text-sm font-medium text-gray-900">{event}</p>
+      </motion.div>
+      <div className="min-w-0 flex-1 bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold text-slate-900">{event}</p>
+          <span className="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-full">{date}</span>
         </div>
-        <div className="mt-2 text-sm text-gray-700">
-          <p>{description}</p>
-        </div>
+        <p className="text-sm text-slate-600">{description}</p>
       </div>
     </div>
-  </div>
+  </motion.div>
 );
 
-export default function CaseDetails({ params }: { params: { id: string } }) {
+export default function CaseDetails({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const resolvedParams = use(params);
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -113,22 +141,58 @@ export default function CaseDetails({ params }: { params: { id: string } }) {
     });
   };
 
-  // Get appropriate status color
-  const getStatusColor = (status: string): string => {
+  // Get appropriate status color and icon
+  const getStatusInfo = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return {
+          color: 'bg-amber-50 text-amber-800 border-amber-200',
+          bgColor: 'bg-amber-100',
+          icon: Clock,
+          label: 'Awaiting Review'
+        };
       case 'in progress':
-        return 'bg-blue-100 text-blue-800';
+        return {
+          color: 'bg-blue-50 text-blue-800 border-blue-200',
+          bgColor: 'bg-blue-100',
+          icon: Eye,
+          label: 'In Progress'
+        };
       case 'resolved':
-        return 'bg-green-100 text-green-800';
+        return {
+          color: 'bg-green-50 text-green-800 border-green-200',
+          bgColor: 'bg-green-100',
+          icon: CheckCircle2,
+          label: 'Case Resolved'
+        };
       case 'closed':
-        return 'bg-gray-100 text-gray-800';
+        return {
+          color: 'bg-slate-50 text-slate-800 border-slate-200',
+          bgColor: 'bg-slate-100',
+          icon: XCircle,
+          label: 'Case Closed'
+        };
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return {
+          color: 'bg-red-50 text-red-800 border-red-200',
+          bgColor: 'bg-red-100',
+          icon: AlertCircle,
+          label: 'Case Rejected'
+        };
       default:
-        return 'bg-gray-100 text-gray-800';
+        return {
+          color: 'bg-slate-50 text-slate-800 border-slate-200',
+          bgColor: 'bg-slate-100',
+          icon: FileText,
+          label: status.charAt(0).toUpperCase() + status.slice(1)
+        };
     }
+  };
+
+  // Get appropriate status color (legacy support)
+  const getStatusColor = (status: string): string => {
+    const statusInfo = getStatusInfo(status);
+    return statusInfo.color.replace('border-', '').replace(' border-amber-200', '').replace(' border-blue-200', '').replace(' border-green-200', '').replace(' border-slate-200', '').replace(' border-red-200', '');
   };
 
   // Format case type for display
@@ -152,9 +216,10 @@ export default function CaseDetails({ params }: { params: { id: string } }) {
         setLoading(true);
         setError('');
         
-        const response = await fetch(`${config.BASE_URL}/api/v1/cases/${params.id}`, {
+        const response = await fetch(`${config.BASE_URL}/api/v1/cases/${resolvedParams.id}`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
 
@@ -173,174 +238,354 @@ export default function CaseDetails({ params }: { params: { id: string } }) {
     };
 
     fetchCaseData();
-  }, [params.id, router]);
+  }, [resolvedParams.id, router]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="min-h-screen bg-gradient-to-br from-white via-emerald-50/30 to-white flex justify-center items-center"
+      >
+        <div className="flex items-center gap-4 text-slate-600">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full"
+          />
+          <div>
+            <p className="text-lg font-semibold">Loading case details...</p>
+            <p className="text-sm text-slate-500">Please wait while we fetch your case information</p>
+          </div>
+        </div>
+      </motion.div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 p-4 rounded-lg text-red-600 max-w-4xl mx-auto my-8">
-        <h3 className="text-lg font-semibold mb-2">Error</h3>
-        <p>{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="min-h-screen bg-gradient-to-br from-white via-emerald-50/30 to-white flex justify-center items-center p-6"
+      >
+        <div className="bg-white rounded-2xl border border-red-200 shadow-xl p-8 max-w-md w-full text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">Unable to Load Case</h3>
+          <p className="text-slate-600 mb-6">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => window.location.reload()} 
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              Try Again
+            </motion.button>
+            <Link href="/user-dashboard/cases">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all duration-200"
+              >
+                Back to Cases
+              </motion.button>
+            </Link>
+          </div>
+        </div>
+      </motion.div>
     );
   }
 
   if (!caseData) {
     return (
-      <div className="bg-yellow-50 p-4 rounded-lg text-yellow-600 max-w-4xl mx-auto my-8">
-        <h3 className="text-lg font-semibold mb-2">Case Not Found</h3>
-        <p>The case you're looking for could not be found.</p>
-        <Link
-          href="/user-dashboard/cases"
-          className="mt-4 px-4 py-2 inline-block bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-        >
-          Back to Cases
-        </Link>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="min-h-screen bg-gradient-to-br from-white via-emerald-50/30 to-white flex justify-center items-center p-6"
+      >
+        <div className="bg-white rounded-2xl border border-amber-200 shadow-xl p-8 max-w-md w-full text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
+            <FileText className="w-8 h-8 text-amber-600" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">Case Not Found</h3>
+          <p className="text-slate-600 mb-6">The case you're looking for could not be found or may have been moved.</p>
+          <Link href="/user-dashboard/cases">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              Back to Cases
+            </motion.button>
+          </Link>
+        </div>
+      </motion.div>
     );
   }
 
   const timeline = generateTimeline(caseData);
+  const statusInfo = getStatusInfo(caseData.status);
+  const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-8">
-      {/* Header with navigation */}
-      <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
-        <Link href="/user-dashboard/cases" className="hover:text-green-600">
-          My Cases
-        </Link>
-        <span>›</span>
-        <span className="text-gray-700">Case Details</span>
-      </div>
-
-      {/* Case Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold text-black">{caseData.title}</h1>
-            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(caseData.status)}`}>
-              {caseData.status.charAt(0).toUpperCase() + caseData.status.slice(1)}
-            </span>
-          </div>
-          <div className="mt-2 space-y-1">
-            <p className="text-gray-600">Case ID: <span className="text-gray-800">{caseData._id}</span></p>
-            <p className="text-gray-600">Type: <span className="text-gray-800">{formatCaseType(caseData.caseType)}</span></p>
-            <p className="text-gray-600">Filed on: <span className="text-gray-800">{formatDate(caseData.createdAt)}</span></p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => window.print()} 
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-br from-white via-emerald-50/30 to-white"
+    >
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Header with navigation */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex items-center gap-2 text-sm text-slate-500 mb-6"
+        >
+          <Link 
+            href="/user-dashboard/cases" 
+            className="flex items-center gap-2 hover:text-emerald-600 transition-colors"
           >
-            Print Details
-          </button>
-          <Link
-            href={`/user-dashboard/cases/${caseData._id}/update`}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Update Case
+            <ArrowLeft className="w-4 h-4" />
+            My Cases
           </Link>
-        </div>
-      </div>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-slate-700 font-medium">Case Details</span>
+        </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Timeline and Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Case Description */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Case Description</h2>
-            <p className="text-gray-700 whitespace-pre-line">{caseData.description}</p>
-          </div>
-
-          {/* Case Timeline */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Case Timeline</h2>
-            {timeline.length > 0 ? (
-              <div className="pl-4">
-                {timeline.map((item, index) => (
-                  <TimelineItem key={index} {...item} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 italic">No timeline events available</p>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column - Lawyer Info and Actions */}
-        <div className="space-y-6">
-          {/* Assigned Lawyer */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Assigned Lawyer</h2>
-            {caseData.lawyer ? (
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">
-                    {caseData.lawyer.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{caseData.lawyer.name}</p>
-                    <p className="text-sm text-gray-500">Legal Counsel</p>
-                  </div>
+        {/* Case Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Scale className="w-6 h-6 text-white" />
                 </div>
-                <div className="pt-3 border-t border-gray-100 space-y-2">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Email:</span> {caseData.lawyer.email}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Phone:</span> {caseData.lawyer.phone}
-                  </p>
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">{caseData.title}</h1>
+                  <p className="text-slate-600">Case ID: <span className="font-mono text-slate-800">#{caseData._id.slice(-8)}</span></p>
                 </div>
               </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-gray-500 mb-3">No lawyer has been assigned to this case yet.</p>
-                <p className="text-sm text-gray-500">A lawyer will be assigned to your case soon.</p>
+              
+              <div className="flex flex-wrap items-center gap-4 mb-6">
+                <span className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border ${statusInfo.color}`}>
+                  <StatusIcon className="w-4 h-4" />
+                  {statusInfo.label}
+                </span>
+                <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                  <FileText className="w-4 h-4" />
+                  <span>{formatCaseType(caseData.caseType)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                  <Calendar className="w-4 h-4" />
+                  <span>Filed {formatDate(caseData.createdAt)}</span>
+                </div>
               </div>
-            )}
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => window.print()} 
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-all duration-200"
+              >
+                <Printer className="w-5 h-5" />
+                Print Details
+              </motion.button>
+              <Link href={`/user-dashboard/cases/${caseData._id}/update`}>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold shadow-lg transition-all duration-200"
+                >
+                  <Edit className="w-5 h-5" />
+                  Update Case
+                </motion.button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Left Column - Case Description and Timeline */}
+          <div className="xl:col-span-2 space-y-6">
+            {/* Case Description */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Case Description</h2>
+              </div>
+              <div className="prose prose-slate max-w-none">
+                <p className="text-slate-700 leading-relaxed whitespace-pre-line">{caseData.description}</p>
+              </div>
+            </motion.div>
+
+            {/* Case Timeline */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-emerald-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Case Timeline</h2>
+              </div>
+              
+              {timeline.length > 0 ? (
+                <div className="space-y-2">
+                  {timeline.map((item, index) => (
+                    <TimelineItem key={index} index={index} {...item} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <motion.div
+                    animate={{ 
+                      rotate: [0, 5, -5, 0],
+                      scale: [1, 1.05, 1]
+                    }}
+                    transition={{ 
+                      duration: 4,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                    className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-4"
+                  >
+                    <Clock className="w-8 h-8 text-slate-400" />
+                  </motion.div>
+                  <p className="text-slate-500 italic">No timeline events available</p>
+                </div>
+              )}
+            </motion.div>
           </div>
 
-          {/* Case Status */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Case Status</h2>
-            <div className={`p-4 rounded-lg ${getStatusColor(caseData.status)} bg-opacity-50`}>
-              <h3 className="font-medium text-gray-900 mb-1">
-                {caseData.status === 'pending' && 'Awaiting Review'}
-                {caseData.status === 'in progress' && 'In Progress'}
-                {caseData.status === 'resolved' && 'Case Resolved'}
-                {caseData.status === 'closed' && 'Case Closed'}
-                {caseData.status === 'rejected' && 'Case Rejected'}
-              </h3>
-              <p className="text-sm">
-                {caseData.status === 'pending' && 'Your case is awaiting review by our legal team.'}
-                {caseData.status === 'in progress' && 'Your case is being actively worked on by your assigned lawyer.'}
-                {caseData.status === 'resolved' && 'Your case has been successfully resolved.'}
-                {caseData.status === 'closed' && 'This case has been closed and is no longer active.'}
-                {caseData.status === 'rejected' && 'Unfortunately, your case has been rejected.'}
-              </p>
-            </div>
-            <div className="mt-4">
-              <p className="text-sm text-gray-500">
-                Last updated: {formatDate(caseData.updatedAt)}
-              </p>
-            </div>
+          {/* Right Column - Lawyer Info and Case Status */}
+          <div className="space-y-6">
+            {/* Assigned Lawyer */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center">
+                  <User className="w-5 h-5 text-purple-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Assigned Lawyer</h2>
+              </div>
+              
+              {caseData.lawyer ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                      {caseData.lawyer.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{caseData.lawyer.name}</p>
+                      <p className="text-sm text-slate-600">Legal Counsel</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                      <Mail className="w-4 h-4 text-slate-500" />
+                      <span className="text-sm font-medium text-slate-700">Email:</span>
+                      <span className="text-sm text-slate-600">{caseData.lawyer.email}</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                      <Phone className="w-4 h-4 text-slate-500" />
+                      <span className="text-sm font-medium text-slate-700">Phone:</span>
+                      <span className="text-sm text-slate-600">{caseData.lawyer.phone}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <motion.div
+                    animate={{ 
+                      rotate: [0, 5, -5, 0],
+                      scale: [1, 1.05, 1]
+                    }}
+                    transition={{ 
+                      duration: 4,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                    className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-4"
+                  >
+                    <Users className="w-8 h-8 text-slate-400" />
+                  </motion.div>
+                  <p className="text-slate-600 font-medium mb-2">No Lawyer Assigned</p>
+                  <p className="text-sm text-slate-500">A qualified lawyer will be assigned to your case soon.</p>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Case Status */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center">
+                  <StatusIcon className="w-5 h-5 text-amber-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Case Status</h2>
+              </div>
+              
+              <div className={`p-6 rounded-xl border ${statusInfo.color}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <StatusIcon className="w-6 h-6" />
+                  <h3 className="font-bold text-lg">{statusInfo.label}</h3>
+                </div>
+                <p className="text-sm mb-4">
+                  {caseData.status === 'pending' && 'Your case is awaiting review by our legal team. We will assign a qualified lawyer soon.'}
+                  {caseData.status === 'in progress' && 'Your case is being actively worked on by your assigned lawyer. Stay tuned for updates.'}
+                  {caseData.status === 'resolved' && 'Congratulations! Your case has been successfully resolved in your favor.'}
+                  {caseData.status === 'closed' && 'This case has been closed and is no longer active. All proceedings have been completed.'}
+                  {caseData.status === 'rejected' && 'Unfortunately, your case has been rejected after careful review by our legal team.'}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg">
+                  <Clock className="w-3 h-3" />
+                  <span>Last updated: {formatDate(caseData.updatedAt)}</span>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

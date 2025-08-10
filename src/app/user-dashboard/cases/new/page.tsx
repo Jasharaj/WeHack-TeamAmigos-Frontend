@@ -3,6 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  FileEdit, 
+  ArrowLeft, 
+  User, 
+  AlertCircle, 
+  CheckCircle2, 
+  Loader2,
+  Scale,
+  Building,
+  FileText
+} from 'lucide-react';
 import config from '@/config';
 
 interface Lawyer {
@@ -141,161 +153,287 @@ export default function NewCase() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex justify-center items-center min-h-[70vh]"
+      >
+        <div className="flex items-center gap-3 text-slate-600">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <span className="text-lg">Loading...</span>
+        </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-black">File New Case</h1>
-        <p className="text-gray-600 mt-1">Provide details about your legal case</p>
-      </div>
-
-      {/* Success Message */}
-      {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-700 font-medium">Your case has been successfully submitted!</p>
-          <p className="text-green-600 text-sm mt-1">Redirecting to your cases...</p>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-        {/* Case Title */}
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-            Case Title <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            placeholder="Enter a descriptive title for your case"
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-            required
-          />
-        </div>
-
-        {/* Case Type */}
-        <div>
-          <label htmlFor="caseType" className="block text-sm font-medium text-gray-700 mb-1">
-            Case Type <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="caseType"
-            name="caseType"
-            value={formData.caseType}
-            onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-            required
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-br from-white via-emerald-50/30 to-white"
+    >
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <Link 
+            href="/user-dashboard/cases"
+            className="inline-flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors mb-4 group"
           >
-            <option value="">Select case type</option>
-            {caseTypes.map(type => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Case Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Case Description <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows={6}
-            placeholder="Provide a detailed description of your case including relevant facts, dates, and your concerns"
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-            required
-          />
-        </div>
-
-        {/* Lawyer Selection */}
-        <div>
-          <label htmlFor="lawyerId" className="block text-sm font-medium text-gray-700 mb-1">
-            Select Lawyer (Optional)
-          </label>
-          {loadingLawyers ? (
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-green-500 rounded-full"></div>
-              <span>Loading lawyers...</span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Cases
+          </Link>
+          
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <FileEdit className="w-6 h-6 text-white" />
             </div>
-          ) : (
-            <select
-              id="lawyerId"
-              name="lawyerId"
-              value={formData.lawyerId}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">File New Case</h1>
+              <p className="text-slate-600 mt-1">Provide details about your legal case to get started</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Success Message */}
+        <AnimatePresence>
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="mb-6 p-6 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-sm"
             >
-              <option value="">No preference (system will assign)</option>
-              {lawyers.map(lawyer => (
-                <option key={lawyer._id} value={lawyer._id}>
-                  {lawyer.name} {lawyer.specialization ? `- ${lawyer.specialization}` : ''}
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                <div>
+                  <p className="text-emerald-800 font-semibold">Case submitted successfully!</p>
+                  <p className="text-emerald-700 text-sm mt-1">Redirecting you to your cases...</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Error Message */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="mb-6 p-6 bg-red-50 border border-red-200 rounded-2xl shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                <p className="text-red-800">{error}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Form */}
+        <motion.form 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          onSubmit={handleSubmit} 
+          className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8 space-y-8"
+        >
+          {/* Case Title */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <label htmlFor="title" className="block text-sm font-semibold text-slate-700 mb-3">
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-emerald-600" />
+                Case Title 
+                <span className="text-red-500">*</span>
+              </div>
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Enter a descriptive title for your case"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 text-slate-900 bg-white transition-all duration-200 hover:border-slate-300"
+              required
+            />
+          </motion.div>
+
+          {/* Case Type */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <label htmlFor="caseType" className="block text-sm font-semibold text-slate-700 mb-3">
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-emerald-600" />
+                Case Type 
+                <span className="text-red-500">*</span>
+              </div>
+            </label>
+            <select
+              id="caseType"
+              name="caseType"
+              value={formData.caseType}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 text-slate-900 bg-white transition-all duration-200 hover:border-slate-300"
+              required
+            >
+              <option value="">Select case type</option>
+              {caseTypes.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
                 </option>
               ))}
             </select>
-          )}
-          <p className="text-sm text-gray-500 mt-1">
-            You can select a specific lawyer or leave it blank to have one assigned to you
-          </p>
-        </div>
+          </motion.div>
 
-        {/* Form Actions */}
-        <div className="flex justify-between pt-4">
-          <Link
-            href="/user-dashboard/cases"
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          {/* Case Description */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
           >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={submitting}
-            className={`px-6 py-2 bg-green-600 text-white rounded-lg transition-colors ${
-              submitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
-            }`}
+            <label htmlFor="description" className="block text-sm font-semibold text-slate-700 mb-3">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-600" />
+                Case Description 
+                <span className="text-red-500">*</span>
+              </div>
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={6}
+              placeholder="Provide a detailed description of your case including relevant facts, dates, and your concerns"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 text-slate-900 bg-white transition-all duration-200 hover:border-slate-300 resize-none"
+              required
+            />
+          </motion.div>
+
+          {/* Lawyer Selection */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
           >
-            {submitting ? (
-              <span className="flex items-center">
-                <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-white rounded-full"></span>
-                Submitting...
-              </span>
+            <label htmlFor="lawyerId" className="block text-sm font-semibold text-slate-700 mb-3">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-emerald-600" />
+                Select Lawyer (Optional)
+              </div>
+            </label>
+            {loadingLawyers ? (
+              <div className="flex items-center space-x-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />
+                <span className="text-sm text-slate-600">Loading available lawyers...</span>
+              </div>
             ) : (
-              'Submit Case'
+              <select
+                id="lawyerId"
+                name="lawyerId"
+                value={formData.lawyerId}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 text-slate-900 bg-white transition-all duration-200 hover:border-slate-300"
+              >
+                <option value="">No preference (system will assign)</option>
+                {lawyers.map(lawyer => (
+                  <option key={lawyer._id} value={lawyer._id}>
+                    {lawyer.name} {lawyer.specialization ? `- ${lawyer.specialization}` : ''}
+                  </option>
+                ))}
+              </select>
             )}
-          </button>
-        </div>
-      </form>
+            <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
+              <User className="w-4 h-4" />
+              You can select a specific lawyer or leave it blank to have one assigned based on expertise
+            </p>
+          </motion.div>
 
-      {/* Help Information */}
-      <div className="mt-8 bg-blue-50 p-4 rounded-lg">
-        <h3 className="font-medium text-blue-800 mb-2">What happens next?</h3>
-        <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
-          <li>Your case will be reviewed by our team</li>
-          <li>If you selected a lawyer, they will be notified of your case</li>
-          <li>If you didn't select a lawyer, our system will assign one based on expertise and availability</li>
-          <li>You'll receive updates on your case status via the dashboard</li>
-        </ul>
+          {/* Form Actions */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-slate-200"
+          >
+            <Link
+              href="/user-dashboard/cases"
+              className="w-full sm:w-auto px-6 py-3 border-2 border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 font-medium text-center"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold transition-all duration-200 ${
+                submitting 
+                  ? 'opacity-70 cursor-not-allowed' 
+                  : 'hover:from-emerald-700 hover:to-teal-700 hover:shadow-lg transform hover:-translate-y-0.5'
+              }`}
+            >
+              {submitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Submitting...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <FileEdit className="w-5 h-5" />
+                  Submit Case
+                </span>
+              )}
+            </button>
+          </motion.div>
+        </motion.form>
+
+        {/* Help Information */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="mt-8 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200 shadow-sm"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="font-semibold text-blue-900">What happens next?</h3>
+          </div>
+          <ul className="space-y-2 text-blue-800">
+            <li className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <span>Your case will be reviewed by our legal team</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <span>If you selected a lawyer, they will be notified immediately</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <span>If no lawyer was selected, we'll assign one based on expertise and availability</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <span>You'll receive real-time updates on your case status through the dashboard</span>
+            </li>
+          </ul>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
