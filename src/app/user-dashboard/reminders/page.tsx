@@ -136,12 +136,6 @@ export default function RemindersPage() {
 
   // Combine all events for calendar
   useEffect(() => {
-    console.log('Raw data:', { 
-      reminders: reminders.length, 
-      cases: cases.length, 
-      disputes: disputes.length 
-    });
-    
     const reminderEvents = reminders.map(reminder => ({
       id: reminder._id,
       title: `📋 ${reminder.title}`,
@@ -154,8 +148,6 @@ export default function RemindersPage() {
     }));
     
     const casesWithHearings = cases.filter(c => c.nextHearing);
-    console.log('Cases with hearings:', casesWithHearings.length, casesWithHearings);
-    console.log('All cases:', cases.map(c => ({ id: c._id, title: c.title, nextHearing: c.nextHearing })));
     
     const caseEvents = casesWithHearings.map(caseItem => ({
       id: `case-${caseItem._id}`,
@@ -169,8 +161,6 @@ export default function RemindersPage() {
     }));
     
     const disputesWithHearings = disputes.filter(d => d.nextHearing);
-    console.log('Disputes with hearings:', disputesWithHearings.length, disputesWithHearings);
-    console.log('All disputes:', disputes.map(d => ({ id: d._id, title: d.title, nextHearing: d.nextHearing })));
     
     const disputeEvents = disputesWithHearings.map(dispute => ({
       id: `dispute-${dispute._id}`,
@@ -189,8 +179,6 @@ export default function RemindersPage() {
       ...disputeEvents
     ];
     
-    console.log('Generated calendar events:', combinedEvents);
-    console.log('Event breakdown - Reminders:', reminderEvents.length, 'Cases:', caseEvents.length, 'Disputes:', disputeEvents.length);
     setEvents(combinedEvents);
   }, [reminders, cases, disputes]);
 
@@ -199,9 +187,6 @@ export default function RemindersPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      
-      console.log('Token found:', !!token);
-      console.log('Base URL:', config.BASE_URL);
 
       // Always try to fetch real data first
       if (token) {
@@ -236,28 +221,22 @@ export default function RemindersPage() {
 
           if (remindersRes.ok) {
             const remindersData = await remindersRes.json();
-            console.log('Reminders data:', remindersData);
             setReminders(remindersData.data || remindersData || []);
           } else {
-            console.log('Reminders API failed:', remindersRes.status, await remindersRes.text());
             setReminders([]);
           }
 
           if (casesRes.ok) {
             const casesData = await casesRes.json();
-            console.log('Cases data:', casesData);
             setCases(casesData.data || casesData || []);
           } else {
-            console.log('Cases API failed:', casesRes.status, await casesRes.text());
             setCases([]);
           }
 
           if (disputesRes.ok) {
             const disputesData = await disputesRes.json();
-            console.log('Disputes data:', disputesData);
             setDisputes(disputesData.data || disputesData || []);
           } else {
-            console.log('Disputes API failed:', disputesRes.status, await disputesRes.text());
             setDisputes([]);
           }
 
@@ -269,7 +248,6 @@ export default function RemindersPage() {
           setDisputes([]);
         }
       } else {
-        console.log('No token - user not logged in');
         // No token - user not logged in, set empty arrays
         setReminders([]);
         setCases([]);

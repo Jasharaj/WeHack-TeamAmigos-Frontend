@@ -99,7 +99,9 @@ const UserSidebar = () => {
         } else {
           // If not JSON, handle the error
           const text = await response.text();
-          console.error('Non-JSON response received:', text);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Non-JSON response received:', text);
+          }
           throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
         }
 

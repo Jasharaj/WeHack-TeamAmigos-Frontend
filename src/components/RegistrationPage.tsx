@@ -323,7 +323,9 @@ const RegistrationPage: React.FC = () => {
       } else {
         // If not JSON, get text content for error handling
         const text = await response.text();
-        console.error('Non-JSON response received:', text);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Non-JSON response received:', text);
+        }
         throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
       }
 

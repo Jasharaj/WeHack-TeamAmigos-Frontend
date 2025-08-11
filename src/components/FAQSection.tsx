@@ -29,7 +29,6 @@ const FAQSection = () => {
   ];
 
   const toggleFAQ = (index: number) => {
-    console.log('FAQ clicked:', index, 'Current openIndex:', openIndex);
     setOpenIndex(prev => prev === index ? null : index);
   };
 

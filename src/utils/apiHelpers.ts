@@ -1,5 +1,7 @@
 // Utility functions for API calls and error handling
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 /**
  * Safely parse JSON response, handling non-JSON responses gracefully
  * @param response - Fetch response object
@@ -13,13 +15,17 @@ export const safeJsonParse = async (response: Response): Promise<any> => {
     try {
       return await response.json();
     } catch (error) {
-      console.error('Failed to parse JSON:', error);
+      if (isDevelopment) {
+        console.error('Failed to parse JSON:', error);
+      }
       throw new Error('Invalid JSON response from server');
     }
   } else {
     // If not JSON, get text content for better error reporting
     const text = await response.text();
-    console.error('Non-JSON response received:', text);
+    if (isDevelopment) {
+      console.error('Non-JSON response received:', text);
+    }
     throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
   }
 };
@@ -41,7 +47,9 @@ export const safeApiRequest = async (url: string, options: RequestInit = {}): Pr
     
     return data;
   } catch (error) {
-    console.error('API Request failed:', error);
+    if (isDevelopment) {
+      console.error('API Request failed:', error);
+    }
     throw error;
   }
 };

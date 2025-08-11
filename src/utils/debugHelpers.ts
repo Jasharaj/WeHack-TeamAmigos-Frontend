@@ -20,7 +20,7 @@ export const testEndpoint = async (endpoint: string): Promise<boolean> => {
 };
 
 /**
- * Log detailed error information for debugging
+ * Log detailed error information for debugging (development only)
  * @param error - Error object or string
  * @param context - Additional context for the error
  */

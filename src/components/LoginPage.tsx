@@ -259,12 +259,12 @@ const LoginPage: React.FC = () => {
       } else {
         // If not JSON, handle the error
         const text = await response.text();
-        console.error('Non-JSON response received:', text);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Non-JSON response received:', text);
+        }
         throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
       }
       
-      console.log('Login response:', data); // Debug log
-
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
@@ -279,50 +279,31 @@ const LoginPage: React.FC = () => {
       
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('role', userRole); // Store role separately for dashboard auth check
-      console.log('Full response data:', data); // Debug log
-      console.log('Response keys:', Object.keys(data)); // Debug log
-      console.log('User data stored:', userData); // Debug log
-      console.log('User role:', userRole); // Debug log
+      localStorage.setItem('role', userRole);
       
-      // Check if data has different structure
-      if (data.data) {
-        console.log('Found data.data:', data.data);
-      }
-      if (data.userData) {
-        console.log('Found data.userData:', data.userData);
-      }
-
       setShowToast(true);
       
-      // Try immediate redirect without timeout first
-      console.log('About to redirect with role:', userRole);
-      
+      // Redirect based on user role
       if (userData && userRole === 'lawyer') {
-        console.log('Redirecting to lawyer dashboard');
         try {
           await router.push('/lawyer-dashboard');
-          console.log('Router push completed');
         } catch (routerError) {
-          console.error('Router push failed, trying window.location:', routerError);
+          console.error('Router navigation failed:', routerError);
           window.location.href = '/lawyer-dashboard';
         }
       } else if (userData && userRole === 'citizen') {
-        console.log('Redirecting to user dashboard');
         try {
           await router.push('/user-dashboard');
-          console.log('Router push completed');
         } catch (routerError) {
-          console.error('Router push failed, trying window.location:', routerError);
+          console.error('Router navigation failed:', routerError);
           window.location.href = '/user-dashboard';
         }
       } else {
-        console.log('No valid role found, staying on login page');
-        console.log('Available data:', data);
+        throw new Error('Invalid user role or missing user data');
       }
 
     } catch (err: any) {
-      console.error('Login error:', err); // Debug log
+      console.error('Login error:', err);
       setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
