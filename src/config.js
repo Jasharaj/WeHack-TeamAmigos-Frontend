@@ -5,7 +5,7 @@ const config = {
   // BASE_URL: 'http://localhost:5000',
   // Fallback to port 8000 if 5000 doesn't work
   // BASE_URL: 'http://localhost:8000',
-  BASE_URL: 'https://wehack-fkon.onrender.com',
+  BASE_URL: 'https://wehack-teamamigos-backend.onrender.com/',
 };
 
 export default config;
