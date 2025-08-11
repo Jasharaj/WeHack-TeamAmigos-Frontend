@@ -90,11 +90,23 @@ const UserSidebar = () => {
           }
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile');
+        // Check if the response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          // If not JSON, handle the error
+          const text = await response.text();
+          console.error('Non-JSON response received:', text);
+          throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch profile');
+        }
+
         setUserProfile(data.data);
       } catch (err) {
         console.error('Error fetching user profile:', err);

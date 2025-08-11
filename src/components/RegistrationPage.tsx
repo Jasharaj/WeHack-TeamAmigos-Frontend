@@ -314,7 +314,18 @@ const RegistrationPage: React.FC = () => {
         body: JSON.stringify(registrationData),
       });
 
-      const data = await response.json();
+      // Check if the response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // If not JSON, get text content for error handling
+        const text = await response.text();
+        console.error('Non-JSON response received:', text);
+        throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+      }
 
       if (!response.ok) {
         throw new Error(data.message || 'Registration failed');
